@@ -88,7 +88,6 @@ class Midi:
     def resume_task(self, task_id):
         self.stop_list.remove(task_id)
 
-    @property
     def panic(self):
         if self.output is None: return
         for i in range(0,16):

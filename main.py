@@ -9,7 +9,7 @@ from devices import NovationCircuit
 from clock import Clock
 from midi import Midi
 from banger import Banger
-from uservalues import Seq, PingPong
+import uservalues
 
 
 header = "Welcome to Banger.\n\n"
@@ -21,10 +21,16 @@ circuit = NovationCircuit(midi, channels=(3,4,5))
 
 clock.run()
 
-def create_beater(beats):
+def create_banger(beats):
     beater = Banger(beats)
     midi.schedule_task(beats, beater)
     return beater
+
+def rand(start, stop, length=1):
+    if length == 1:
+        return random.randint(start, stop)
+    else:
+        return [random.randint(start, stop) for i in range(length)]
 
 scope = dict(
     note = midi.note,
@@ -33,16 +39,18 @@ scope = dict(
     start = midi.schedule_task,
     stop = midi.stop_task,
     resume = midi.resume_task,
-    rand = random.randint,
+    rand = rand,
     clock = clock,
     midi = midi,
-    create_beater = create_beater,
+    create_banger = create_banger,
     banger = Banger,
-    root = create_beater(0.125),
+    root = create_banger(0.125),
     open_port = midi.open_port,
     list_ports = midi.list_ports,
-    seq = Seq,
-    pingpong = PingPong
+    Seq = uservalues.Seq,
+    shuffle = random.shuffle,
+    repeater = uservalues.repeater,
+    pingponger = uservalues.pingponger
 )
 
 
