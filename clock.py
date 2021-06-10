@@ -9,7 +9,7 @@ class Clock:
         self.on_beat = lambda beat: None
         self.beat_resolution = 24
 
-            
+
     def loop(self):
         beat_counter = 0
         tick_counter = 0
@@ -28,11 +28,11 @@ class Clock:
                 beat_counter += 1
                 self.on_beat(beat_counter)
 
-            now = get_time() 
+            now = get_time()
             duration = now - next_tick
 
-            wait = tick_duration - duration            
-            
+            wait = tick_duration - duration
+
             next_tick += tick_duration
 
             if(wait < 0):
@@ -43,11 +43,11 @@ class Clock:
                 time.sleep(wait*0.5)
             self.stats = tick_duration, duration, wait
             tick_duration = 60 / (self.beat_resolution * self.bpm)
-    
+
     def run(self):
         self.thread = threading.Thread(target=self.loop)
         self.thread.start()
-    
+
     def stop(self):
         self.execute = False
         self.thread.join(2000)

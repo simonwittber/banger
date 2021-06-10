@@ -1,9 +1,37 @@
 import mido
 from heapq import heappush, heappop
 from uservalues import _ev
+import threading
 
 
-class Midi:
+class MidiIn:
+    def __init__(self, clock):
+        self.clock = clock
+        self.input = None
+
+    def open_port(self, name):
+        self.input = mido.open_input(name)
+
+    def loop(self):
+        while self.execute:
+            if self.input is None: continue
+            for msg in self.input.iter_pending():
+                self.dispatch(msg)
+
+    def run(self):
+        self.execute = True
+        self.thread = threading.Thread(target=self.loop)
+        self.thread.start()
+
+    def stop(self):
+        self.execute = False
+        self.thread.join(2000)
+
+    def dispatch(self, msg):
+        print(msg)
+
+
+class MidiOut:
     bpm = 99
     def __init__(self, clock):
         self.output = None
@@ -17,6 +45,7 @@ class Midi:
         self.clock.on_tick = self.execute_scheduled_tasks
         self.last_tick = 0
         self.playing_notes = {}
+
 
     def handle_note_off(self):
         for i in list(self.playing_notes):
@@ -33,13 +62,15 @@ class Midi:
         self.handle_note_off()
         while len(self.schedule) > 0:
             t, last_t, task_id, next_task = heappop(self.schedule)
+            isOneShot = callable(next_task)
             if t > tick:
                 heappush(self.schedule, (t, last_t, task_id, next_task))
                 break
             if(task_id in self.stop_list):
-                heappush(self.schedule, (tick+last_t, last_t, task_id, next_task))
+                if not isOneShot:
+                    heappush(self.schedule, (tick+last_t, last_t, task_id, next_task))
                 continue
-            if callable(next_task):
+            if isOneShot:
                 next_task()
                 continue
             beats = next(next_task, None)
@@ -55,7 +86,15 @@ class Midi:
     def list_ports(self):
         return mido.get_output_names()
 
-    def note(self, channel, note, velocity=100, duration=1):
+    def note(self, channel, note, velocity=100, duration=1, delay=None):
+        if delay is None:
+            self._note(channel, note, velocity, duration)
+        else:
+            ticks = delay * self.clock.beat_resolution
+            heappush(self.schedule, (self.last_tick + ticks, 0, -1, lambda: self._note(channel, note, velocity, duration)))
+
+
+    def _note(self, channel, note, velocity=100, duration=1):
         if self.output is not None:
             n = int(_ev(note, 128))
             if n is not None:
@@ -92,7 +131,6 @@ class Midi:
         if self.output is None: return
         for i in range(0,16):
             for k in range(0,128):
-                self.output.send(self.noteMessage.copy(channel=i, note=k,
-                    velocity=0))
+                self.output.send(self.noteMessage.copy(channel=i, note=k, velocity=0))
 
 
