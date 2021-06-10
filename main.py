@@ -37,16 +37,18 @@ def rand(start, stop, length=1):
         return [random.randint(start, stop) for i in range(length)]
 
 
-def open_input():
+def open_input(p = None):
     ports = midi_in.list_ports()
-    p = choice("Choose an input port", ports)
+    if p is None:
+        p = choice("Choose an input port", ports)
     if p is not None:
         midi_in.open_port(p)
 
 
-def open_output():
+def open_output(p = None):
     ports = midi.list_ports()
-    p = choice("Choose an output port", ports)
+    if p is None:
+        p = choice("Choose an output port", ports)
     if p is not None:
         midi.open_port(p)
 
