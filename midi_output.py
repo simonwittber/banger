@@ -4,36 +4,9 @@ from uservalues import _ev
 import threading
 
 
-class MidiIn:
-    def __init__(self, clock):
-        self.clock = clock
-        self.input = None
-
-    def open_port(self, name):
-        self.input = mido.open_input(name)
-
-    def loop(self):
-        while self.execute:
-            if self.input is None: continue
-            for msg in self.input.iter_pending():
-                self.dispatch(msg)
-
-    def run(self):
-        self.execute = True
-        self.thread = threading.Thread(target=self.loop)
-        self.thread.start()
-
-    def stop(self):
-        self.execute = False
-        self.thread.join(2000)
-
-    def dispatch(self, msg):
-        print(msg)
-
-
 class MidiOut:
-    bpm = 99
     def __init__(self, clock):
+        self.bpm = 99
         self.output = None
         self.schedule = []
         self.stop_list = set()

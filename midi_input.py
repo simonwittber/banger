@@ -8,9 +8,9 @@ class MidiIn:
     def __init__(self, clock):
         self.clock = clock
         self.input = None
-        self.run()
         self.cc = {}
         self.note = {}
+        self.run()
 
     def open_port(self, name):
         self.input = mido.open_input(name)
@@ -23,7 +23,7 @@ class MidiIn:
             if self.input is not None:
                 for msg in self.input.iter_pending():
                     self.dispatch(msg)
-            time.sleep(0.1)
+            time.sleep(0.01)
 
     def run(self):
         self.execute = True
