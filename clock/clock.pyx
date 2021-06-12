@@ -14,13 +14,16 @@ cdef float get_time() nogil:
 class Clock:
     def __init__(self, bpm=120):
         self.bpm = bpm
+        self.time_signature = [4,4]
         self.execute = True
         self.on_tick = lambda tick: None
         self.on_beat = lambda beat: None
+        self.on_bar = lambda bar: None
         self.beat_resolution = 24
 
 
     def loop(self):
+        cdef int bar_counter = 0
         cdef int beat_counter = 0
         cdef int tick_counter = 0
         cdef float tick_duration = 60 / (self.beat_resolution * self.bpm)
@@ -37,6 +40,10 @@ class Clock:
             if tick_counter % self.beat_resolution == 0:
                 beat_counter += 1
                 self.on_beat(beat_counter)
+                if beat_counter % self.time_signature[0] == 0:
+                    bar_counter += 1
+                    self.on_bar(bar_counter)
+
 
             now = get_time()
             duration = now - next_tick

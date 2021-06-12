@@ -1,63 +1,38 @@
 import numbers
+from uservalues import _ev, Seq, Rnd
 
 
 class Banger:
-    def __init__(self, beats):
-        self.__dict__.update(dict(
-            beats = beats,
-            tick = 0,
-            children = {},
-            enabled = True))
+    def __init__(self, *notes, channel=0):
+        self.channel = channel
+        self.notes = Seq(*notes)
+        self.velocities = Seq(120)
+        self.durations = Seq(1)
+        self.pulses = Seq(1)
+        self.enabled = True
 
-    def list(self, ind=0):
-        indent = "  " * ind
-        print("%sBanger(%s):"%(indent, self.beats))
-        for k,v in self.__dict__["children"].items():
-            if isinstance(v, Banger):
-                v.list(ind + 1)
-            else:
-                print("%s- %s (%s)"%(indent,k,v))
+    def pause(self, enabled=False):
+        self.enabled = enabled
 
-
-    def __next__(self):
-        d = self.__dict__
-        d["tick"] += 1
-        children = d["children"]
-        beats = d["beats"]
-        if d["tick"] % beats == 0:
-            for i in children:
-                fn = children[i]
-                if isinstance(fn, Banger):
-                    next(fn)
-                else:
-                    try:
-                        if fn is not None: fn()
-                    except Exception as e:
-                        print("Error in %s (%s)"%(fn,e))
-                        children[i] = None
-        return beats
-
-    def __setitem__(self, key, value):
-        print("Error, you cannot set on this object.")
-
-    def __getitem__(self, key):
-        children = self.__dict__.get("children")
-        if key in children:
-            return children[key]
-        if isinstance(key, numbers.Number):
-            banger = children[key] = Banger(key)
-            return banger
-
-    def __delitem__(self, key):
-        del self.children[key]
+    def __repr__(self):
+        return  ("Channel:    %s\nNotes:      %r\nVelocities: %s\nDurations:  %r\nPulses:     %r"%
+                (self.channel, self.notes, self.velocities, self.durations, self.pulses))
 
     def __setattr__(self, key, value):
-        self.children[key] = value
-        #self.__setitem__(key, value)
+        if isinstance(value, list):
+            self.__dict__[key] = Rnd(*value)
+        elif isinstance(value, tuple):
+            self.__dict__[key] = Seq(*value)
+        else:
+            self.__dict__[key] = value
 
-    def __delattr__(self, key):
-        self.__delitem__(key)
+    def __next__(self):
+        if self.enabled:
+            n = next(self.notes)
+            v = next(self.velocities)
+            d = next(self.durations)
+            p = next(self.pulses)
+            return self.channel, n, v, d, p
 
-    def __getattr__(self, key):
-        self.__getitem__(key)
+
 

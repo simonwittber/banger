@@ -7,6 +7,7 @@ import collections
 class Seq:
     def __init__(self, *args):
         self.items = list(args)
+        self.index = 0
 
     def __len__(self): return len(self.items)
 
@@ -29,7 +30,7 @@ class Seq:
         return self.__class__(*[i // value for i in self.items])
 
     def __repr__(self):
-        return repr(self.items)
+        return "%s%s"%(self.__class__.__name__, repr(self.items))
 
     def __getitem__(self, i):
         if isinstance(i, slice):
@@ -39,30 +40,17 @@ class Seq:
     def __setitem__(self, i, v):
         self.items[i] = v
 
-
-def repeater(seq):
-    index = 0
-    while True:
-        if index >= len(seq):
-            index = 0
-        v = seq[index]
-        index += 1
-        yield v
+    def __next__(self):
+        if self.index >= len(self.items):
+            self.index = 0
+        v = self.items[self.index]
+        self.index += 1
+        return v
 
 
-def pingponger(seq):
-    index = 0
-    direction = 1
-    while True:
-        if index >= len(seq):
-            index = len(seq) - 2
-            direction = -1
-        if index < 0:
-            index = 1
-            direction = 1
-        v = seq[index]
-        index += direction
-        yield v
+class Rnd(Seq):
+    def __next__(self):
+        return random.choice(self.items)
 
 
 def clamp(t, a, b):

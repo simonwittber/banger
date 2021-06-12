@@ -6,11 +6,13 @@ from devices import NovationCircuit
 from clock import Clock
 from midi_output import MidiOut
 from midi_input import MidiIn
-from banger import Banger
 from ui import choice
 
 import random
 import uservalues
+import banger
+import mido
+import pickle
 
 
 header = "Welcome to Banger.\n\n"
@@ -24,10 +26,36 @@ circuit = NovationCircuit(midi, channels=(3,4,5))
 clock.run()
 
 
-def create_banger(beats):
-    beater = Banger(beats)
-    midi.schedule_task(beats, beater)
-    return beater
+def save(b, name):
+    with open(name, "wb") as f:
+        pickle.dump(b, f)
+
+
+def load(name):
+    with open(name, "rb") as f:
+        return pickle.load(f)
+
+
+def _play(b):
+    while True:
+        cnvdp = next(b)
+        if cnvdp is None:
+            yield 1
+        else:
+            c, n, v, d, p = cnvdp
+            if p:
+                midi.note(c, n, velocity=v, duration=d)
+            yield d
+
+
+def play(b):
+    b.task = midi.schedule_task(0, _play(b))
+
+
+def Banger(*notes, channel=0):
+    b = banger.Banger(*notes, channel=channel)
+    play(b)
+    return b
 
 
 def rand(start, stop, length=1):
@@ -41,17 +69,18 @@ def open_input(p = None):
     ports = midi_in.list_ports()
     if p is None:
         p = choice("Choose an input port", ports)
-    if p is not None:
         midi_in.open_port(p)
+    else:
+        midi_in.open_port(ports[p])
 
 
 def open_output(p = None):
     ports = midi.list_ports()
     if p is None:
         p = choice("Choose an output port", ports)
-    if p is not None:
         midi.open_port(p)
-
+    else:
+        midi.open_port(ports[p])
 
 
 scope = dict(
@@ -67,13 +96,13 @@ scope = dict(
     clock = clock,
     midi = midi,
     midi_in = midi_in,
-    create_banger = create_banger,
+    Banger = Banger,
     banger = Banger,
-    root = create_banger(0.125),
     Seq = uservalues.Seq,
+    Rnd = uservalues.Rnd,
     shuffle = random.shuffle,
-    repeater = uservalues.repeater,
-    pingponger = uservalues.pingponger,
+    play = play, load = load, save = save,
+    ps = midi.ps
 )
 
 
@@ -89,6 +118,6 @@ print("\nType help(command) for more information.\n")
 try:
     IPython.start_ipython(user_ns=scope, config=c)
 finally:
-    clock.stop()
     midi_in.stop()
+    midi.panic()
 print(footer)
