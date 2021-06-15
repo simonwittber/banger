@@ -3,6 +3,13 @@ from uservalues import _ev, Seq, Rnd
 
 
 class Banger:
+    instances = dict()
+
+    @classmethod
+    @property
+    def bangers(_class):
+        return _class.instances
+
     def __init__(self, *notes, channel=0):
         self.channel = channel
         self.notes = Seq(*notes)
@@ -10,9 +17,7 @@ class Banger:
         self.durations = Seq(1)
         self.pulses = Seq(1)
         self.enabled = True
-
-    def pause(self, enabled=False):
-        self.enabled = enabled
+        Banger.instances[id(self)] = self
 
     def __repr__(self):
         return  ("Channel:    %s\nNotes:      %r\nVelocities: %s\nDurations:  %r\nPulses:     %r"%

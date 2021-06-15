@@ -42,8 +42,8 @@ class MidiOut:
                 self.playing_notes[i] = t
 
     def schedule_pending_tasks(self, bar):
-        for task_id, fn in self.pending_tasks:
-            heappush(self.schedule, (self.last_tick, 0, task_id, fn))
+        for t, task_id, fn in self.pending_tasks:
+            heappush(self.schedule, (self.last_tick+t, 0, task_id, fn))
         self.pending_tasks[:] = []
 
 
@@ -117,7 +117,7 @@ class MidiOut:
         task_id = self.task_counter
         self.task_counter += 1
         ticks = beats * self.clock.beat_resolution
-        self.pending_tasks.append((task_id, fn))
+        self.pending_tasks.append((ticks, task_id, fn))
         return task_id
 
 
@@ -171,12 +171,18 @@ class MidiOut:
         self.stop_list.remove(task_id)
 
 
-    def panic(self):
+    def note_off(self, channel=None):
         self.clock.stop()
         if self.output is None: return
-        for i in range(0,16):
+        if channel is None:
+            for i in range(0,16):
+                for k in range(0,128):
+                    self.output.send(mido.Message('note_on', channel=i, note=k, velocity=0))
+                    self.output.send(mido.Message('note_off', channel=i, note=k, velocity=0))
+        else:
             for k in range(0,128):
                 self.output.send(mido.Message('note_on', channel=i, note=k, velocity=0))
                 self.output.send(mido.Message('note_off', channel=i, note=k, velocity=0))
+
 
 

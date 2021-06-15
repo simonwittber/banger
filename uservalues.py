@@ -2,6 +2,7 @@ import numbers
 import random
 import math
 import collections
+import sequence
 
 
 class Seq:
@@ -12,22 +13,19 @@ class Seq:
     def __len__(self): return len(self.items)
 
     def __add__(self, value):
-        if isinstance(value, collections.Iterator) or isinstance(value, Seq):
-            return self.__class__(*(self.items + list(value)))
-        else:
-            return self.__class__(*[i + value for i in self.items])
+        return self.__class__(*sequence.add(self.items, value))
 
     def __sub__(self, value):
-        return self.__class__(*[i - value for i in self.items])
+        return self.__class__(*sequence.sub(self.items, value))
 
     def __mul__(self, value):
-        return self.__class__(*[i * value for i in self.items])
+        return self.__class__(*sequence.mul(self.items, value))
 
     def __truediv__(self, value):
-        return self.__class__(*[i / value for i in self.items])
+        return self.__class__(*sequence.truediv(self.items, value))
 
     def __floordiv__(self, value):
-        return self.__class__(*[i // value for i in self.items])
+        return self.__class__(*sequence.floordiv(self.items, value))
 
     def __repr__(self):
         return "%s%s"%(self.__class__.__name__, repr(self.items))
@@ -53,23 +51,15 @@ class Rnd(Seq):
         return random.choice(self.items)
 
 
-def clamp(t, a, b):
-    if t < a: return a
-    if t > b: return b
-    return t
-
-
-def repeat(t, length):
-    return clamp(t - math.floor(t / length) * length, 0.0, length)
-
-
 def pingpong(t, length):
     t = repeat(t, length * 2);
     return length - abs(t - length);
 
 
 def _ev(o, clamp=None):
-    if isinstance(o, tuple) or isinstance(o, list):
+    if isinstance(o, tuple):
+        return _ev(random.randint(o[0], o[1]), clamp)
+    if isinstance(o, list):
         return _ev(random.choice(o), clamp)
     if isinstance(o, collections.Iterator):
         return _ev(next(o), clamp)

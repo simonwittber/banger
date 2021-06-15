@@ -13,6 +13,7 @@ import uservalues
 import banger
 import mido
 import pickle
+import sequence
 
 
 header = "Welcome to Banger.\n\n"
@@ -25,6 +26,9 @@ circuit = NovationCircuit(midi, channels=(3,4,5))
 
 clock.run()
 
+bangers = banger.Banger.instances
+
+
 
 def save(b, name):
     with open(name, "wb") as f:
@@ -33,7 +37,33 @@ def save(b, name):
 
 def load(name):
     with open(name, "rb") as f:
-        return pickle.load(f)
+        b = pickle.load(f)
+        if isinstance(b, banger.Banger):
+            banger.Banger.instances[id(b)] = b
+        return b
+
+
+def clone(b):
+    new_b = pickle.loads(pickle.dumps(b))
+    if isinstance(new_b, Banger):
+        banger.Banger.instances[id(new_b)] = new_b
+
+
+def pause(*tasks):
+    for i in tasks:
+        if isinstance(b, banger.Banger):
+            b.enabled = False
+        else:
+            midi.stop_task(b)
+
+
+
+def resume(*tasks):
+    for i in tasks:
+        if isinstance(b, banger.Banger):
+            b.enabled = True
+        else:
+            midi.resume_task(b)
 
 
 def _play(b):
@@ -48,8 +78,11 @@ def _play(b):
             yield d
 
 
-def play(b):
-    b.task = midi.schedule_task(0, _play(b))
+def play(b, when=0):
+    if isinstance(b, banger.Banger):
+        b.task = midi.schedule_task(when, _play(b))
+    else:
+        return midi.schedule_task(when, b)
 
 
 def Banger(*notes, channel=0):
@@ -90,8 +123,8 @@ scope = dict(
     cc = midi.cc,
     circuit = circuit,
     start = midi.schedule_task,
-    stop = midi.stop_task,
-    resume = midi.resume_task,
+    stop_task = midi.stop_task,
+    resume_task = midi.resume_task,
     rand = rand,
     clock = clock,
     midi = midi,
@@ -102,8 +135,11 @@ scope = dict(
     Rnd = uservalues.Rnd,
     shuffle = random.shuffle,
     play = play, load = load, save = save,
-    ps = midi.ps
+    ps = midi.ps, bangers=bangers,
+    note_off = midi.note_off, pause=pause, resume=resume
 )
+for i in sequence.__all__:
+    scope[i] = getattr(sequence, i)
 
 
 from traitlets.config import Config
@@ -119,5 +155,5 @@ try:
     IPython.start_ipython(user_ns=scope, config=c)
 finally:
     midi_in.stop()
-    midi.panic()
+    midi.note_off()
 print(footer)

@@ -11,6 +11,7 @@ class MidiIn:
         self.cc = {}
         self.note = {}
         self.run()
+        self.learn = None
 
     def open_port(self, name):
         self.input = mido.open_input(name)
@@ -44,6 +45,10 @@ class MidiIn:
             if msg.note in self.note:
                 self.note[msg.note](0)
         elif msg.type == "control_change":
+            if self.learn is not None:
+                self.connect_cc(msg.control, self.learn)
+                print("Connected %s to %s"%(self.learn, msg.control))
+                self.learn = None
             if msg.control in self.cc:
                 self.cc[msg.control](msg.value)
         else:
@@ -54,6 +59,10 @@ class MidiIn:
 
     def connect_note(self, note, fn):
         self.note[note] = fn
+
+    def learn_cc(self, fn):
+        self.learn = fn
+
 
 
 

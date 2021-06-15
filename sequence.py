@@ -50,8 +50,8 @@ class BinaryOp:
     def _op_list(self, items, obj2):
         return [self.op(i, obj2) for i in items]
 
-    def _op_number(self, number, obj2):
-        return self.fn(number, obj2)
+    def _op_number(self, number1, number2):
+        return self.fn(number1, number2)
 
     def _op_list_list(self, items1, items2):
         return [self.op(a,b) for a,b in zip(items1, items2)]
@@ -60,7 +60,8 @@ class BinaryOp:
 
 add = BinaryOp(operator.add)
 sub = BinaryOp(operator.sub)
-div = BinaryOp(operator.truediv)
+truediv = BinaryOp(operator.truediv)
+floordiv = BinaryOp(operator.floordiv)
 mul = BinaryOp(operator.mul)
 lerp = lambda a, b, x: add(a, mul(sub(b,a),x))
 floor = UnaryOp(math.floor)
@@ -71,10 +72,9 @@ mutate = BinaryOp(lambda a, b: a + random.uniform(-b,b))
 minimum = BinaryOp(lambda a, b: min(a,b))
 maximum = BinaryOp(lambda a, b: max(a,b))
 clamp = lambda a, mn, mx: maximum(minimum(a, mx), mn)
-
 repeat = BinaryOp(lambda t, length: clamp(t - math.floor(t / length) * length, 0.0, length))
-
 pingpong = BinaryOp(lambda t, length: length - abs(repeat(t, length * 2) - length))
 
 
-__all__ = ["add"]
+__all__ = ["add","sub","truediv","floordiv","mul","lerp","floor","cos","sin","fabs","mutate",
+           "minimum","maximum","clamp","repeat","pingpong"]
