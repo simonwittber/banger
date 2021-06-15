@@ -17,6 +17,7 @@ class Banger:
         self.durations = Seq(1)
         self.pulses = Seq(1)
         self.enabled = True
+        self.scale = None
         Banger.instances[id(self)] = self
 
     def __repr__(self):
@@ -34,6 +35,8 @@ class Banger:
     def __next__(self):
         if self.enabled:
             n = next(self.notes)
+            if self.scale is not None:
+                n = self.scale[n]
             v = next(self.velocities)
             d = next(self.durations)
             p = next(self.pulses)

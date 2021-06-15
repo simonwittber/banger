@@ -4,7 +4,7 @@ import IPython
 from heapq import heappush, heappop
 from devices import NovationCircuit
 from clock import Clock
-from midi_output import MidiOut
+from midi_output import MidiOut, Scale
 from midi_input import MidiIn
 from ui import choice
 
@@ -136,7 +136,8 @@ scope = dict(
     shuffle = random.shuffle,
     play = play, load = load, save = save,
     ps = midi.ps, bangers=bangers,
-    note_off = midi.note_off, pause=pause, resume=resume
+    note_off = midi.note_off, pause=pause, resume=resume,
+    Scale = Scale
 )
 for i in sequence.__all__:
     scope[i] = getattr(sequence, i)

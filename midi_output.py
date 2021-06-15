@@ -4,6 +4,23 @@ from uservalues import _ev
 import threading
 
 
+class Scale:
+    def __init__(self, tonic=0, scale=(0, 2, 3, 5, 7, 8, 11)):
+        self.tonic = tonic
+        self.scale = scale
+
+    def __repr__(self):
+        return "%r %r"%(self.tonic, self.scale)
+
+    def quantize(self, note):
+        octave = int(note / 12)
+        quantized_note = octave * 12 + self.scale[note % 12 % len(self.scale)] + self.tonic
+        return quantized_note
+
+    def __getitem__(self, note):
+        return self.quantize(note)
+
+
 class MidiOut:
     def __init__(self, clock):
         self.bpm = 99
@@ -21,6 +38,7 @@ class MidiOut:
         self.playing_notes = {}
         self.tasks = {}
         self.pending_tasks = []
+        self.scale = None
 
 
     def ps(self):
@@ -96,6 +114,8 @@ class MidiOut:
     def _note(self, channel, note, velocity=100, duration=1):
         if self.output is not None:
             n = int(_ev(note, 128))
+            if isinstance(self.scale, Scale):
+                n = self.scale[n]
             if n is not None:
                 c = int(_ev(channel, 16))
                 v =  int(_ev(velocity, 128))
