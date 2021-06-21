@@ -99,7 +99,7 @@ class NovationDrum:
 
     def update(self, deltaTime):
         self.knobs.update(deltaTime)
-            
+
     def cc(self, control_name, value):
         control = self.drum_controls[self.index][control_name]
         self.midi.cc(self.channel, control, value)
@@ -108,19 +108,19 @@ class NovationDrum:
     def trigger(self, velocity=100):
         self.midi.note(self.channel, self.note_on_number, velocity)
         return self
-    
+
     def patch(self, index):
         self.cc('patchselect', index)
         return self
-    
+
     def level(self, value):
         self.cc('level', value)
         return self
-    
+
     def pitch(self, value):
         self.cc('pitch', value)
         return self
-    
+
     def decay(self, value):
         self.cc('decay', value)
         return self
@@ -136,6 +136,6 @@ class NovationDrum:
     def pan(self, value):
         self.cc('pan', value)
         return self
-        
+
 
 

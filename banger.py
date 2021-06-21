@@ -36,7 +36,7 @@ class Banger:
         if self.enabled:
             n = next(self.notes)
             if self.scale is not None:
-                n = self.scale[n]
+                n = self.scale(n)
             v = next(self.velocities)
             d = next(self.durations)
             p = next(self.pulses)
