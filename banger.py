@@ -1,9 +1,11 @@
 import numbers
-from uservalues import _ev, Seq, Rnd
+from patterns import Seq, Rnd
 
 
 class Banger:
     instances = dict()
+
+    __slots__ = "channel","_notes","_velocities","_durations","_pulses","enabled","scale"
 
     @classmethod
     @property
@@ -24,16 +26,53 @@ class Banger:
         return  ("Channel:    %s\nNotes:      %r\nVelocities: %s\nDurations:  %r\nPulses:     %r"%
                 (self.channel, self.notes, self.velocities, self.durations, self.pulses))
 
-    def __setattr__(self, key, value):
+    @property
+    def notes(self):
+        return self._notes
+    @notes.setter
+    def notes(self, value):
+        self._notes = self.convert_value(value)
+
+
+    @property
+    def velocities(self):
+        return self._velocities
+    @velocities.setter
+    def velocities(self, value):
+        self._velocities = self.convert_value(value)
+
+
+    @property
+    def durations(self):
+        return self._durations
+    @durations.setter
+    def durations(self, value):
+        self._durations = self.convert_value(value)
+
+
+    @property
+    def pulses(self):
+        return self._pulses
+    @pulses.setter
+    def pulses(self, value):
+        self._pulses = self.convert_value(value)
+
+
+    def convert_value(self, value):
         if isinstance(value, list):
-            self.__dict__[key] = Rnd(*value)
+            return Rnd(*value)
         elif isinstance(value, tuple):
-            self.__dict__[key] = Seq(*value)
+            return Seq(*value)
         else:
-            self.__dict__[key] = value
+            return value
 
     def __next__(self):
         if self.enabled:
+            if len(self.notes) == 0: return None
+            if len(self.velocities) == 0: return None
+            if len(self.durations) == 0: return None
+            if len(self.pulses) == 0: return None
+
             n = next(self.notes)
             if self.scale is not None:
                 n = self.scale(n)

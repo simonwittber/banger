@@ -1,39 +1,60 @@
-from clock import Clock
-from midi_output import MidiOut
 import scale
-from midi_input import MidiIn
-from ui import choice
-
 import random
-import uservalues
 import banger
 import mido
 import pickle
 import sequence
+import os
+import clock
+import midi_in
+import midi_out
+
+from ui import choice, confirm
+from utils import CC
 
 
-clock = Clock(bpm=120)
-midi_out = MidiOut(clock)
-midi_in = MidiIn(clock)
-clock.run()
 
 bangers = banger.Banger.instances
 
+loaded_objects = {}
 
 
-def save(b, name):
-    with open(name, "wb") as f:
-        if isinstance(b, banger.Banger):
-            b.name = name
-        pickle.dump(b, f)
+def save(b, name, msg=None):
+    writeFile = True
+    if os.path.isfile(name):
+        writeFile = confirm(msg if msg is not None else "%s exists, overwrite"%name, False)
+    if writeFile:
+        with open(name, "wb") as f:
+            if isinstance(b, banger.Banger):
+                b.name = name
+            pickle.dump(b, f)
 
 
-def load(name):
-    with open(name, "rb") as f:
-        b = pickle.load(f)
-        if isinstance(b, banger.Banger):
-            banger.Banger.instances[b.name] = b
-        return b
+def save_all():
+    for k,v in loaded_objects:
+        save(v, k)
+
+
+def load(name, default=None):
+    if os.path.isfile(name):
+        with open(name, "rb") as f:
+            try:
+                b = pickle.load(f)
+            except Exception:
+                pass
+            else:
+                if isinstance(b, banger.Banger):
+                    banger.Banger.instances[b.name] = b
+                if hasattr(b, "_connect_midi_out"):
+                    b._connect_midi_out()
+                if hasattr(b, "_connect_midi_in"):
+                    b._connect_midi_in()
+                loaded_objects[f] = b
+                return b
+
+    if default is None:
+        return None
+    return default()
 
 
 def clone(b):
@@ -72,14 +93,13 @@ def play_sequence(b):
 
 def play(b, when=0):
     if isinstance(b, banger.Banger):
-        b.task = midi_out.schedule_task(when, play_sequence(b))
+        return midi_out.schedule_task(when, play_sequence(b))
     else:
         return midi_out.schedule_task(when, b)
 
 
 def Banger(*notes, channel=0):
     b = banger.Banger(*notes, channel=channel)
-    play(b)
     return b
 
 
@@ -109,8 +129,17 @@ def open_output(p=None):
         print("Opening %s"%ports[p])
         midi_out.open_port(ports[p])
 
+
+def learn_cc():
+    c = CC()
+    c.learn()
+    return c
+
+
+
 note = midi_out.note
 cc = midi_out.cc
+learn = midi_in.learn_cc
 start_task = midi_out.schedule_task
 stop_task = midi_out.stop_task
 resume_task = midi_out.resume_task
