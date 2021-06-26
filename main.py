@@ -27,6 +27,7 @@ for i in sequence.__all__:
 
 s = commands.load("session", session.Expando)
 scope["s"] = s
+scope["circuit"] = NovationCircuit()
 
 c = Config()
 c.InteractiveShell.autocall = 2

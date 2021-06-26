@@ -14,7 +14,10 @@ class Scale:
 
     def quantize(self, note):
         octave = int(note / 12)
-        quantized_note = octave * 12 + self.scale[note % 12 % len(self.scale)] + self.tonic
+        note_number = note % 12
+        index = int((1 / 12) * note_number * len(self.scale))
+        actual_note = self.scale[index]
+        quantized_note = octave * 12 + actual_note + self.tonic
         return quantized_note
 
     def __call__(self, note):
@@ -22,6 +25,7 @@ class Scale:
             return tuple(self(i) for i in note)
         if isinstance(note, list):
             return list(self(i) for i in note)
+        if note < 0: return note
         return self.quantize(note)
 
 

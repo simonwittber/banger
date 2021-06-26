@@ -18,4 +18,7 @@ class CC:
     def learn(self):
         midi_in.learn_cc(self._setter)
 
+    def __repr__(self):
+        return repr(self.value)
+
 

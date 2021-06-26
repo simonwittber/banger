@@ -4,6 +4,7 @@ import threading
 import time
 import random
 import clock
+import numbers
 
 
 
@@ -102,16 +103,13 @@ class MidiOut:
         self.flush_outbox()
 
 
-
     def open_port(self, port):
         with self.lock:
             self.output.add(mido.open_output(port))
 
 
-
     def list_ports(self):
         return mido.get_output_names()
-
 
 
     def note(self, channel, note, velocity=100, duration=1, delay=None):
@@ -121,22 +119,31 @@ class MidiOut:
             ticks = delay * clock.beat_resolution
             heappush(self.schedule, (self.last_tick + ticks, 0, -1, lambda: self._note(channel, note, velocity, duration)))
 
+    @staticmethod
+    def evaluate_parameter(v):
+        if isinstance(v, numbers.Number):
+            return v
+        if isinstance(v, list):
+            return MidiOut.evaluate_parameter(random.choice(v))
+        if callable(v):
+            return MidiOut.evaluate_parameter(v())
+        return None
 
     def _note(self, channel, note, velocity=100, duration=1):
         if self.output is not None:
-            if isinstance(note, list):
-                note = random.choice(note)
+            note = self.evaluate_parameter(note)
             if not isinstance(note, tuple):
                 note = (note,)
             c = channel
             v = velocity
             for n in note:
-                self.outbox[channel, n] = velocity, duration
+                if n is not None and n >= 0:
+                    self.outbox[channel, n] = velocity, duration
 
 
     def cc(self, channel, control, value):
         if self.output is not None:
-            self.send(self.controlMessage.copy(channel=channe, control=control, value=value))
+            self.send(self.controlMessage.copy(channel=channel, control=control, value=value))
 
 
     def schedule_task(self, beats, fn):

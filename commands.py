@@ -8,6 +8,7 @@ import os
 import clock
 import midi_in
 import midi_out
+import session
 
 from ui import choice, confirm
 from utils import CC
@@ -31,7 +32,7 @@ def save(b, name, msg=None):
 
 
 def save_all():
-    for k,v in loaded_objects:
+    for k,v in loaded_objects.items():
         save(v, k)
 
 
@@ -49,7 +50,7 @@ def load(name, default=None):
                     b._connect_midi_out()
                 if hasattr(b, "_connect_midi_in"):
                     b._connect_midi_in()
-                loaded_objects[f] = b
+                loaded_objects[name] = b
                 return b
 
     if default is None:
@@ -59,7 +60,7 @@ def load(name, default=None):
 
 def clone(b):
     new_b = pickle.loads(pickle.dumps(b))
-    if isinstance(new_b, Banger):
+    if isinstance(new_b, banger.Banger):
         banger.Banger.instances[id(new_b)] = new_b
 
 
@@ -72,7 +73,7 @@ def pause(*tasks):
 
 
 def resume(*tasks):
-    for i in tasks:
+    for b in tasks:
         if isinstance(b, banger.Banger):
             b.enabled = True
         else:
@@ -85,14 +86,15 @@ def play_sequence(b):
         if cnvdp is None:
             yield 1
         else:
+            #channel, note, velocity, duration, pulse
             c, n, v, d, p = cnvdp
-            if p:
-                midi_out.note(c, n, velocity=v, duration=d)
-            yield d
+            midi_out.note(c, n, velocity=v, duration=d)
+            yield midi_out.evaluate_paramter(p)
 
 
 def play(b, when=0):
     if isinstance(b, banger.Banger):
+        b.enabled = True
         return midi_out.schedule_task(when, play_sequence(b))
     else:
         return midi_out.schedule_task(when, b)
@@ -110,24 +112,26 @@ def rnd(start, stop, length=1):
         return [random.randint(start, stop) for i in range(length)]
 
 
-def open_input(p=None):
+def open_input(*args):
     ports = midi_in.list_ports()
-    if p is None:
+    if len(args) == 0:
         p = choice("Choose an input port", ports)
         midi_in.open_port(p)
     else:
-        print("Opening %s"%ports[p])
-        midi_in.open_port(ports[p])
+        for i in args:
+            print("Opening %s"%ports[i])
+            midi_in.open_port(ports[i])
 
 
-def open_output(p=None):
+def open_output(*args):
     ports = midi_out.list_ports()
-    if p is None:
+    if len(args) == 0:
         p = choice("Choose an output port", ports)
         midi_out.open_port(p)
     else:
-        print("Opening %s"%ports[p])
-        midi_out.open_port(ports[p])
+        for i in args:
+            print("Opening %s"%ports[i])
+            midi_out.open_port(ports[i])
 
 
 def learn_cc():
@@ -146,5 +150,6 @@ resume_task = midi_out.resume_task
 shuffle = random.shuffle
 ps = midi_out.ps
 note_off = midi_out.note_off
+Session = session.Expando
 
 

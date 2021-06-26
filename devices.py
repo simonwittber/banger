@@ -1,16 +1,17 @@
 import mido
+import midi_out
+
 
 class NovationCircuit:
-    def __init__(self, midi, channels=(1,2,10)):
-        self.midi = midi
+    def __init__(self, channels=(3,4,5)):
         self.synth1_channel = channels[0]
         self.synth2_channel = channels[1]
         self.drum_channel = channels[2]
         self.drum = (
-            NovationDrum(midi, channels[2], 0),
-            NovationDrum(midi, channels[2], 1),
-            NovationDrum(midi, channels[2], 2),
-            NovationDrum(midi, channels[2], 3)
+            NovationDrum(channels[2], 0),
+            NovationDrum(channels[2], 1),
+            NovationDrum(channels[2], 2),
+            NovationDrum(channels[2], 3)
         )
 
 
@@ -90,8 +91,7 @@ class NovationDrum:
             pan = 80
         ))
     note_on = {0:60, 1:62, 2:64, 3:65}
-    def __init__(self, midi, channel, index):
-        self.midi = midi
+    def __init__(self, channel, index):
         self.channel = channel
         self.index = index
         self.note_on_number = self.note_on[index]
@@ -102,11 +102,11 @@ class NovationDrum:
 
     def cc(self, control_name, value):
         control = self.drum_controls[self.index][control_name]
-        self.midi.cc(self.channel, control, value)
+        midi_out.cc(self.channel, control, midi_out.evaluate_parameter(value))
         return self
 
     def trigger(self, velocity=100):
-        self.midi.note(self.channel, self.note_on_number, velocity)
+        midi_out.note(self.channel, self.note_on_number, midi_out.evaluate_parameter(velocity))
         return self
 
     def patch(self, index):

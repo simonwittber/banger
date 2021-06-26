@@ -83,3 +83,9 @@ class Clock:
         self.execute = False
         self.thread.join(2000)
 
+import sys
+c = Clock(120)
+c.run()
+sys.modules["clock"] = c
+
+
