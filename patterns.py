@@ -10,6 +10,9 @@ class Seq:
         self.items = list(args)
         self.index = 0
 
+    def append(self, v):
+        self.items.append(v)
+
     def __len__(self): return len(self.items)
 
     def __add__(self, value):
@@ -44,6 +47,9 @@ class Seq:
         v = self.items[self.index]
         self.index += 1
         return v
+
+    def quantize(self, v):
+        return self.__class__(*sequence.quant(self.items, v))
 
 
 class Rnd(Seq):

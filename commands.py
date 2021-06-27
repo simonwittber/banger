@@ -19,6 +19,14 @@ bangers = banger.Banger.instances
 
 loaded_objects = {}
 
+def record():
+    midi_in.record = True
+    midi_in.recordedMessages[:] = []
+    input("Press enter to finish.")
+    midi_in.record = False
+    b = banger.bangify(midi_in.recordedMessages)
+    return b
+
 
 def save(b, name, msg=None):
     writeFile = True
@@ -88,8 +96,8 @@ def play_sequence(b):
         else:
             #channel, note, velocity, duration, pulse
             c, n, v, d, p = cnvdp
-            midi_out.note(c, n, velocity=v, duration=d)
-            yield midi_out.evaluate_paramter(p)
+            midi_out.note(c, n, velocity=v, duration=d, delay=p)
+            yield midi_out.evaluate_parameter(p)
 
 
 def play(b, when=0):

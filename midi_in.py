@@ -2,27 +2,37 @@ import mido
 import threading
 import time
 import clock
+import midi_out
 
 
 
 class MidiIn:
     def __init__(self):
-        self.input = None
+        self.inputs = set()
         self.cc = {}
         self.note = {}
         self.run()
         self.learn = None
+        self.watch = False
+        self.recordedMessages = []
+        self.record = False
 
     def open_port(self, name):
-        self.input = mido.open_input(name)
+        self.inputs.add(mido.open_input(name))
+
 
     def list_ports(self):
         return mido.get_input_names()
 
     def loop(self):
         while self.execute:
-            if self.input is not None:
-                for msg in self.input.iter_pending():
+            for inp in self.inputs:
+                for msg in inp.iter_pending():
+                    if msg.type != 'clock':
+                        if self.watch:
+                            print("Midi In: %r"%msg)
+                        if self.record:
+                            self.recordedMessages.append(msg.copy(time=midi_out.tick_count))
                     self.dispatch(msg)
             time.sleep(0.01)
 
@@ -46,19 +56,22 @@ class MidiIn:
                 self.note[msg.note](0)
         elif msg.type == "control_change":
             if self.learn is not None:
-                self.connect_cc(msg.control, self.learn)
+                self.connect_cc(msg.channel, msg.control, self.learn)
                 print("Connected %s to %s"%(self.learn, msg.control))
                 self.learn = None
-            if msg.control in self.cc:
-                self.cc[msg.control](msg.control, msg.value)
+            key = msg.channel, msg.control
+            if key in self.cc:
+                self.cc[key](msg.channel, msg.control, msg.value)
+        elif msg.type == 'aftertouch':
+            pass
         else:
             print(msg)
 
-    def connect_cc(self, control, fn):
-        self.cc[control] = fn
+    def connect_cc(self, channel, control, fn):
+        self.cc[channel,control] = fn
 
-    def disconnect_cc(self, control):
-        del self.cc[control]
+    def disconnect_cc(self, channel, control):
+        del self.cc[channel,control]
 
     def connect_note(self, note, fn):
         self.note[note] = fn

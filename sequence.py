@@ -74,6 +74,7 @@ maximum = BinaryOp(lambda a, b: max(a,b))
 clamp = lambda a, mn, mx: maximum(minimum(a, mx), mn)
 repeat = BinaryOp(lambda t, length: clamp(t - math.floor(t / length) * length, 0.0, length))
 pingpong = BinaryOp(lambda t, length: length - abs(repeat(t, length * 2) - length))
+quant = BinaryOp(lambda v, q: round(v /q) * q)
 make_int = UnaryOp(int)
 
 

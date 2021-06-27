@@ -27,6 +27,7 @@ class MidiOut:
         self.outbox = {}
         self.debug = False
         self.lock = threading.Lock()
+        self.tick_count = 0
 
 
     def send(self, msg):
@@ -73,6 +74,7 @@ class MidiOut:
 
 
     def execute_scheduled_tasks(self, tick, now):
+        self.tick_count += 1
         self.handle_note_off()
         self.send(mido.Message(type='clock'))
         while len(self.schedule) > 0:
