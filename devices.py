@@ -102,11 +102,11 @@ class NovationDrum:
 
     def cc(self, control_name, value):
         control = self.drum_controls[self.index][control_name]
-        midi_out.cc(self.channel, control, midi_out.evaluate_parameter(value))
+        midi_out.cc(self.channel, control, value)
         return self
 
     def trigger(self, velocity=100):
-        midi_out.note(self.channel, self.note_on_number, midi_out.evaluate_parameter(velocity))
+        midi_out.note(self.channel, self.note_on_number, velocity=velocity, duration=1)
         return self
 
     def patch(self, index):

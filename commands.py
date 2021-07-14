@@ -14,10 +14,8 @@ from ui import choice, confirm
 from utils import CC
 
 
-
-bangers = banger.Banger.instances
-
 loaded_objects = {}
+
 
 def record():
     midi_in.record = True
@@ -52,8 +50,6 @@ def load(name, default=None):
             except Exception:
                 pass
             else:
-                if isinstance(b, banger.Banger):
-                    banger.Banger.instances[b.name] = b
                 if hasattr(b, "_connect_midi_out"):
                     b._connect_midi_out()
                 if hasattr(b, "_connect_midi_in"):
@@ -68,44 +64,19 @@ def load(name, default=None):
 
 def clone(b):
     new_b = pickle.loads(pickle.dumps(b))
-    if isinstance(new_b, banger.Banger):
-        banger.Banger.instances[id(new_b)] = new_b
+    return new_b
 
 
 def pause(*tasks):
     for b in tasks:
         if isinstance(b, banger.Banger):
             b.enabled = False
-        else:
-            midi_out.stop_task(b)
 
 
 def resume(*tasks):
     for b in tasks:
         if isinstance(b, banger.Banger):
             b.enabled = True
-        else:
-            midi_out.resume_task(b)
-
-
-def play_sequence(b):
-    while True:
-        cnvdp = next(b)
-        if cnvdp is None:
-            yield 1
-        else:
-            #channel, note, velocity, duration, pulse
-            c, n, v, d, p = cnvdp
-            midi_out.note(c, n, velocity=v, duration=d, delay=p)
-            yield midi_out.evaluate_parameter(p)
-
-
-def play(b, when=0):
-    if isinstance(b, banger.Banger):
-        b.enabled = True
-        return midi_out.schedule_task(when, play_sequence(b))
-    else:
-        return midi_out.schedule_task(when, b)
 
 
 def Banger(*notes, channel=0):
@@ -152,12 +123,7 @@ def learn_cc():
 note = midi_out.note
 cc = midi_out.cc
 learn = midi_in.learn_cc
-start_task = midi_out.schedule_task
-stop_task = midi_out.stop_task
-resume_task = midi_out.resume_task
 shuffle = random.shuffle
-ps = midi_out.ps
-note_off = midi_out.note_off
 Session = session.Expando
 
 

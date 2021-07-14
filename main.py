@@ -27,7 +27,8 @@ for i in sequence.__all__:
 
 s = commands.load("session", session.Expando)
 scope["s"] = s
-scope["circuit"] = NovationCircuit()
+circuit = scope["circuit"] = NovationCircuit()
+scope["k"] =  lambda a,b: lambda: circuit.drum[a].patch(b).trigger()
 
 c = Config()
 c.InteractiveShell.autocall = 2
@@ -44,5 +45,6 @@ finally:
     print("Closing down.")
     commands.save(s, "session", "Would you like to save the global session")
     commands.midi_in.stop()
-    commands.midi_out.note_off()
+    commands.midi_out.stop()
+    clock.stop()
 print(footer)

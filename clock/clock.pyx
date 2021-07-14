@@ -31,6 +31,7 @@ class Clock:
         self.on_beat = lambda beat: None
         self.on_bar = lambda bar: None
         self.beat_resolution = 24
+        self.time = 0
 
 
     def loop(self):
@@ -51,6 +52,7 @@ class Clock:
             self.on_tick(tick_counter, now-last_tick)
             last_tick = now
             tick_counter += 1
+            self.time = last_tick
             if tick_counter % self.beat_resolution == 0:
                 beat_counter += 1
                 self.on_beat(beat_counter)
@@ -58,7 +60,7 @@ class Clock:
                     bar_counter += 1
                     self.on_bar(bar_counter, now-last_bar)
                     last_bar = now
-            
+
             tick_duration = 60 / (self.beat_resolution * self.bpm)
             with nogil:
                 now = get_time()

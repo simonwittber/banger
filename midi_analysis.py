@@ -69,6 +69,7 @@ class Analyzer:
         self.tracks = {}
         for i in self.midi_file.tracks:
             print("Loading Track %s"%i.name)
+            self.tracks[i.name] = i
             for order in [1,2,3]:
                 self.tracks[i.name, order] = TrackAnalyzer(i,order)
 

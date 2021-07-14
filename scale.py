@@ -1,3 +1,4 @@
+from sequence import repeat, pingpong
 
 class Scale:
     def __init__(self, tonic, scale):
@@ -8,14 +9,54 @@ class Scale:
             if i == 'S': new_scale.append(new_scale[-1] + 1)
             if i == 'T+S': new_scale.append(new_scale[-1] + 3)
         self.scale = tuple(new_scale)
+        self.stretch()
+
+    def bounce(self):
+        self.quantize = self.quantize_bounce
+
+    def linear(self):
+        self.quantize = self.quantize_linear
+
+    def stretch(self):
+        self.quantize = self.quantize_stretch
+
+    def loop(self):
+        self.quantize = self.quantize_loop
+
+    def off(self):
+        self.quantize = lambda x: x
 
     def __repr__(self):
         return "%r %r"%(self.tonic, self.scale)
 
-    def quantize(self, note):
+    def quantize_linear(self, note):
+        c = len(self.scale)
+        octave = int(note / c)
+        note_number = note % c
+        actual_note = self.scale[note_number]
+        quantized_note = octave * 12 + actual_note + self.tonic
+        return quantized_note
+
+    def quantize_stretch(self, note):
         octave = int(note / 12)
         note_number = note % 12
         index = int((1 / 12) * note_number * len(self.scale))
+        actual_note = self.scale[index]
+        quantized_note = octave * 12 + actual_note + self.tonic
+        return quantized_note
+
+    def quantize_loop(self, note):
+        octave = int(note / 12)
+        note_number = note % 12
+        index = repeat(note_number, len(self.scale))
+        actual_note = self.scale[index]
+        quantized_note = octave * 12 + actual_note + self.tonic
+        return quantized_note
+
+    def quantize_bounce(self, note):
+        octave = int(note / 12)
+        note_number = note % 12
+        index = pingpong(note_number, len(self.scale)-1)
         actual_note = self.scale[index]
         quantized_note = octave * 12 + actual_note + self.tonic
         return quantized_note

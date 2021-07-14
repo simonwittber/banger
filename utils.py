@@ -14,7 +14,7 @@ class CC:
         self.value = value
 
     def _connect_midi_in(self):
-        if self.control is not None:
+        if self.channel is not None and self.control is not None:
             midi_in.connect_cc(self.channel, self.control, self._setter)
 
     def learn(self):

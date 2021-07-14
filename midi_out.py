@@ -1,192 +1,132 @@
 import mido
-from heapq import heappush, heappop
 import threading
 import time
 import random
-import clock
 import numbers
 
+import clock
+import scheduler
 
 
 class MidiOut:
     def __init__(self):
-        self.bpm = 99
-        self.output = set()
-        self.schedule = []
-        self.stop_list = set()
-
-        self.noteMessage = mido.Message("note_on", note=60, velocity=0)
-        self.controlMessage = mido.Message("control_change")
-        self.task_counter = 0
-        clock.on_tick = self.execute_scheduled_tasks
-        clock.on_bar = self.schedule_pending_tasks
-        self.last_tick = 0
-        self.playing_notes = {}
-        self.tasks = {}
-        self.pending_tasks = []
-        self.outbox = {}
-        self.debug = False
+        self.outputs = set()
+        clock.on_tick = self._execute_scheduled_tasks
+        clock.on_bar = self._schedule_pending_tasks
         self.lock = threading.Lock()
-        self.tick_count = 0
+        self._pending_tasks = []
+        self._active_notes = set()
+        self.enable_clock = False
+
+
+    def note(self, channel, note, velocity=100, duration=1, beat=0):
+        c = self.ev(channel)
+        n = self.ev(note)
+        v = self.ev(velocity)
+        d = self.ev(duration)
+        b = self.ev(beat, clamp=False)
+        msg = mido.Message("note_on", channel=c, note=n, velocity=v)
+        self.schedule(msg, b)
+        self.schedule(msg.copy(velocity=0), b+d)
+
+
+    def cc(self, channel, control, value, beat=0):
+        c = self.ev(channel)
+        cc = self.ev(control)
+        v = self.ev(value)
+        self.schedule(mido.Message("control_change", channel=c, control=cc, value=v), beat)
+
+
+    def pitchwheel(self, channel, value, beat=0):
+        c = self.ev(channel)
+        v = self.ev(value)
+        self.schedule(mido.Message("pitchwheel", channel=c, value=v), beat)
+
+
+    def aftertouch(self, channel, value, beat=0):
+        c = self.ev(channel)
+        v = self.ev(value)
+        self.schedule(mido.Message("aftertouch", channel=c, value=v), beat)
+
+
+    def polytouch(self, channel, note, value, beat=0):
+        c = self.ev(channel)
+        n = self.ev(note)
+        v = self.ev(value)
+        self.schedule(mido.Message("polytouch", channel=c, note=n, value=v), beat)
+
+
+    def schedule(self, task, beat):
+        t = beat * clock.beat_resolution
+        self._pending_tasks.append((task, t))
 
 
     def send(self, msg):
+        if msg.type == "note_on":
+            if msg.velocity > 0:
+                self._active_notes.add((msg.channel, msg.note))
+            else:
+                self._active_notes.discard((msg.channel, msg.note))
+        elif msg.type == "note_off":
+            self._active_notes.discard((msg.channel, msg.note))
         with self.lock:
-            for i in self.output:
+            for i in self.outputs:
                 i.send(msg)
 
 
-    def flush_outbox(self):
-        for key,value in self.outbox.items():
-            c, n = key
-            v, duration = value
-            noteMessage = self.noteMessage.copy(channel=c, note=n, velocity=v)
-            self.send(noteMessage)
-            if v > 0:
-                self.playing_notes[c, n] = duration * clock.beat_resolution
-        self.outbox.clear()
+    def stop(self):
+        with self.lock:
+            for channel,note in self._active_notes:
+                msg = mido.Message("note_on", velocity=0, note=note, channel=channel)
+                for i in self.outputs:
+                    i.send(msg)
+            self._active_notes.clear()
+            scheduler.clear()
 
 
-    def ps(self):
-        print("{0:>10} {1:>10} {2:>10} {3}".format("T", "LastT", "ID", "Task"))
-        for i in self.schedule:
-            t, last_t, task_id, task = i
-            print("{0:>10} {1:>10} {2:>10} {3}".format(*i))
+    def _schedule_pending_tasks(self, bar, now):
+        for task, t in self._pending_tasks:
+            scheduler.add(task, t)
+        self._pending_tasks[:] = []
 
 
-    def handle_note_off(self):
-        for i in list(self.playing_notes):
-            t = self.playing_notes[i] - 1
-            if t <= 0:
-                self.send(self.noteMessage.copy(channel=i[0],
-                    note=i[1], velocity=0))
-                del self.playing_notes[i]
-            else:
-                self.playing_notes[i] = t
-
-
-    def schedule_pending_tasks(self, bar, now):
-        if self.debug:
-            print("Bar %s %s"%(bar, now))
-        for t, task_id, fn in self.pending_tasks:
-            heappush(self.schedule, (self.last_tick+t, 0, task_id, fn))
-        self.pending_tasks[:] = []
-
-
-    def execute_scheduled_tasks(self, tick, now):
-        self.tick_count += 1
-        self.handle_note_off()
-        self.send(mido.Message(type='clock'))
-        while len(self.schedule) > 0:
-            t, last_t, task_id, next_task = heappop(self.schedule)
-            isOneShot = callable(next_task)
-            if t > tick:
-                heappush(self.schedule, (t, last_t, task_id, next_task))
-                break
-            if(task_id in self.stop_list):
-                if not isOneShot:
-                    heappush(self.schedule, (tick+last_t, last_t, task_id, next_task))
+    def _execute_scheduled_tasks(self, tick, now):
+        for task in scheduler.ready_tasks():
+            if isinstance(task, mido.Message):
+                self.send(task)
                 continue
-            if isOneShot:
-                try:
-                    next_task()
-                except Exception as e:
-                    print("%s %s"%(next_task,e))
+            if callable(task):
+                task()
                 continue
-            try:
-                beats = next(next_task, None)
-            except Exception as e:
-                print("%s %s"%(next_task,e))
-            else:
-                if beats is not None:
-                    next_t = beats * clock.beat_resolution
-                    heappush(self.schedule, (tick+next_t, next_t, task_id, next_task))
-        self.last_tick = tick
-        self.flush_outbox()
+        if self.enable_clock:
+            self.send(mido.Message(type='clock'))
 
 
     def open_port(self, port):
         with self.lock:
-            self.output.add(mido.open_output(port))
+            self.outputs.add(mido.open_output(port))
 
 
     def list_ports(self):
         return mido.get_output_names()
 
 
-    def note(self, channel, note, velocity=100, duration=1, delay=None):
-        if delay is None:
-            self._note(channel, note, velocity, duration)
-        else:
-            ticks = delay * clock.beat_resolution
-            heappush(self.schedule, (self.last_tick + ticks, 0, -1, lambda: self._note(channel, note, velocity, duration)))
-
     @staticmethod
-    def evaluate_parameter(v):
+    def ev(v, clamp=True):
         if isinstance(v, numbers.Number):
-            return v
+            n = int(v)
+            if clamp:
+                n = min(max(n, 0), 127)
+            return n
         if isinstance(v, list):
-            return MidiOut.evaluate_parameter(random.choice(v))
+            return MidiOut.ev(random.choice(v))
+        if isinstance(v, tuple):
+            return v
         if callable(v):
-            return MidiOut.evaluate_parameter(v())
+            return v
         return None
 
-    def _note(self, channel, note, velocity=100, duration=1):
-        if self.output is not None:
-            note = self.evaluate_parameter(note)
-            if not isinstance(note, tuple):
-                note = (note,)
-            c = channel
-            v = velocity
-            for n in note:
-                if n is not None and n >= 0:
-                    self.outbox[channel, n] = velocity, duration
 
-
-    def cc(self, channel, control, value):
-        if self.output is not None:
-            self.send(self.controlMessage.copy(channel=channel, control=control, value=value))
-
-
-    def schedule_task(self, beats, fn):
-        task_id = self.task_counter
-        self.task_counter += 1
-        ticks = beats * clock.beat_resolution
-        self.pending_tasks.append((ticks, task_id, fn))
-        return task_id
-
-
-    def stop_task(self, task_id):
-        self.stop_list.add(task_id)
-
-
-    def resume_task(self, task_id):
-        self.stop_list.remove(task_id)
-
-
-    def panic(self):
-        clock.stop()
-        if self.output is None: return
-        for i in range(0,16):
-            for k in range(0,128):
-                self.send(mido.Message('note_on', channel=i, note=k, velocity=0))
-                self.send(mido.Message('note_off', channel=i, note=k, velocity=0))
-
-
-    def note_off(self, channel=None):
-        clock.stop()
-        if self.output is None: return
-        if channel is None:
-            for i in range(0,16):
-                for k in range(0,128):
-                    self.send(mido.Message('note_on', channel=i, note=k, velocity=0))
-                    time.sleep(0.0001)
-                    self.send(mido.Message('note_off', channel=i, note=k, velocity=0))
-        else:
-            for k in range(0,128):
-                self.send(mido.Message('note_on', channel=i, note=k, velocity=0))
-                time.sleep(0.0001)
-                self.send(mido.Message('note_off', channel=i, note=k, velocity=0))
 
 
 import sys
