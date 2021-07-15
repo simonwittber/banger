@@ -16,6 +16,7 @@ import commands
 import clock
 import midi_in
 import midi_out
+import waves
 
 
 header = "Welcome to Banger.\n\n"

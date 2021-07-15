@@ -15,12 +15,16 @@ class Scheduler:
     def __init__(self):
         self.tick = 0
         self.tasks = []
+        self._pending_tasks = []
 
     def add(self, task, t):
-        heappush(self.tasks, Task(self.tick+t,task))
+        self._pending_tasks.append(Task(self.tick+t,task))
 
     def ready_tasks(self):
         self.tick += 1
+        for i in self._pending_tasks:
+            heappush(self.tasks, i)
+        self._pending_tasks[:] = []
         while True:
             if len(self.tasks) == 0: return
             if self.tasks[0].t > self.tick: return

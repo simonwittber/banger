@@ -44,7 +44,7 @@ class Banger:
             r.append(name.ljust(17) + ": " + str(getattr(self, name)))
         return "\r\n".join(r)
 
-    def play(self, beats=16):
+    def _play(self, beats=16):
         max_notes = 10000
         time = 0
         if self.enabled:
@@ -58,12 +58,12 @@ class Banger:
         return time
 
 
-    def loop(self):
+    def play(self):
         if self.enabled is None:
             self.enabled = True
         if self.enabled:
-            t = self.play(4)
-            midi_out.schedule(self.loop, t-1)
+            t = self._play(4)
+            midi_out.schedule(self.play, t-1)
 
 
     def stop(self):

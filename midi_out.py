@@ -34,7 +34,7 @@ class MidiOut:
         c = self.ev(channel)
         cc = self.ev(control)
         v = self.ev(value)
-        self.schedule(mido.Message("control_change", channel=c, control=cc, value=v), beat)
+        self.send(mido.Message("control_change", channel=c, control=cc, value=v))
 
 
     def pitchwheel(self, channel, value, beat=0):
@@ -56,9 +56,12 @@ class MidiOut:
         self.schedule(mido.Message("polytouch", channel=c, note=n, value=v), beat)
 
 
-    def schedule(self, task, beat):
-        t = beat * clock.beat_resolution
-        self._pending_tasks.append((task, t))
+    def schedule(self, task, beat=None):
+        if beat is not None:
+            t = beat * clock.beat_resolution
+            self._pending_tasks.append((task, t))
+        else:
+            scheduler.add(task, 0)
 
 
     def send(self, msg):

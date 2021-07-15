@@ -30,6 +30,7 @@ class LFO:
         self.frequency = 0.1
         self.type = 0
 
+    @property
     def value(self):
         t = clock.time
         f = self.frequency
@@ -41,7 +42,8 @@ class LFO:
         fract = pos - indexA #0.2
         partA = values[indexA]
         partB = values[indexB]
-        return lerp(partA, partB, fract)
+        value = lerp(partA, partB, fract)
+        return int((value * 0.5 + 0.5) * 127)
 
 
 
