@@ -17,17 +17,19 @@ class MidiOut:
         self._pending_tasks = []
         self._active_notes = set()
         self.enable_clock = False
+        self.watch = False
+        self.tick = 0
 
 
-    def note(self, channel, note, velocity=100, duration=1, beat=0):
+    def note(self, channel, note, velocity=100, gate=1, beat=0):
         c = self.ev(channel)
         n = self.ev(note)
         v = self.ev(velocity)
-        d = self.ev(duration)
-        b = self.ev(beat, clamp=False)
+        g = self.ev(gate, to_int=False)
+        b = self.ev(beat, clamp=False, to_int=False)
         msg = mido.Message("note_on", channel=c, note=n, velocity=v)
         self.schedule(msg, b)
-        self.schedule(msg.copy(velocity=0), b+d)
+        self.schedule(msg.copy(velocity=0), b+g)
 
 
     def cc(self, channel, control, value, beat=0):
@@ -73,6 +75,8 @@ class MidiOut:
         elif msg.type == "note_off":
             self._active_notes.discard((msg.channel, msg.note))
         with self.lock:
+            msg.time = self.tick / 24
+            if self.watch: print("Midi Out -> %s"%msg)
             for i in self.outputs:
                 i.send(msg)
 
@@ -94,6 +98,7 @@ class MidiOut:
 
 
     def _execute_scheduled_tasks(self, tick, now):
+        self.tick += 1
         for task in scheduler.ready_tasks():
             if isinstance(task, mido.Message):
                 self.send(task)
@@ -115,9 +120,12 @@ class MidiOut:
 
 
     @staticmethod
-    def ev(v, clamp=True):
+    def ev(v, clamp=True, to_int=True):
         if isinstance(v, numbers.Number):
-            n = int(v)
+            if to_int:
+                n = int(v)
+            else:
+                n = float(v)
             if clamp:
                 n = min(max(n, 0), 127)
             return n

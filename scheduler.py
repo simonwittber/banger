@@ -14,11 +14,14 @@ class Task:
 class Scheduler:
     def __init__(self):
         self.tick = 0
+        self.task_count = 0
         self.tasks = []
         self._pending_tasks = []
 
     def add(self, task, t):
-        self._pending_tasks.append(Task(self.tick+t,task))
+        self.task_count += 1
+        schedule_time = self.tick + t, self.task_count
+        self._pending_tasks.append(Task(schedule_time, task))
 
     def ready_tasks(self):
         self.tick += 1
@@ -27,7 +30,7 @@ class Scheduler:
         self._pending_tasks[:] = []
         while True:
             if len(self.tasks) == 0: return
-            if self.tasks[0].t > self.tick: return
+            if self.tasks[0].t[0] > self.tick: return
             task  = heappop(self.tasks)
             yield task.item
 

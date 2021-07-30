@@ -51,7 +51,7 @@ class Seq:
         self.counter += 1
         if self.counter % self.divider == 0:
             self.index += 1
-        return midi_out.ev(v)
+        return v
 
     def quantize(self, v):
         return self.__class__(*sequence.quant(self.items, v))
@@ -64,7 +64,7 @@ class Rnd(Seq):
         self.counter += 1
         if self.counter % self.divider == 0:
             self.index = random.randint(0, len(self.items)-1)
-        return midi_out.ev(v)
+        return v
 
 
 class Pattern:
