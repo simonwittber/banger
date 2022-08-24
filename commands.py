@@ -16,6 +16,9 @@ from utils import CC
 
 loaded_objects = {}
 
+data_folder = "~/bangers/"
+os.makedirs(data_folder, exist_ok=True)
+
 
 def record():
     midi_in.record = True
@@ -28,6 +31,7 @@ def record():
 
 def save(b, name, msg=None):
     writeFile = True
+    name = os.path.join(data_folder, name)
     if os.path.isfile(name):
         writeFile = confirm(msg if msg is not None else "%s exists, overwrite"%name, False)
     if writeFile:
@@ -43,6 +47,7 @@ def save_all():
 
 
 def load(name, default=None):
+    name = os.path.join(data_folder, name)
     if os.path.isfile(name):
         with open(name, "rb") as f:
             try:

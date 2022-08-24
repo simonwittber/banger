@@ -1,3 +1,5 @@
+#!/bin/env python
+
 import IPython
 
 from heapq import heappush, heappop
@@ -19,7 +21,20 @@ import midi_out
 import waves
 
 
-header = "Welcome to Banger.\n\n"
+header = """
+Welcome to
+
+@@@@@@@    @@@@@@   @@@  @@@   @@@@@@@@  @@@@@@@@  @@@@@@@
+@@@@@@@@  @@@@@@@@  @@@@ @@@  @@@@@@@@@  @@@@@@@@  @@@@@@@@
+@@!  @@@  @@!  @@@  @@!@!@@@  !@@        @@!       @@!  @@@
+!@   @!@  !@!  @!@  !@!!@!@!  !@!        !@!       !@!  @!@
+@!@!@!@   @!@!@!@!  @!@ !!@!  !@! @!@!@  @!!!:!    @!@!!@!
+!!!@!!!!  !!!@!!!!  !@!  !!!  !!! !!@!!  !!!!!:    !!@!@!
+!!:  !!!  !!:  !!!  !!:  !!!  :!!   !!:  !!:       !!: :!!
+:!:  !:!  :!:  !:!  :!:  !:!  :!:   !::  :!:       :!:  !:!
+ :: ::::  ::   :::   ::   ::   ::: ::::   :: ::::  ::   :::
+:: : ::    :   : :  ::    :    :: :: :   : :: ::    :   : :
+"""
 footer = "Goodbye."
 
 scope = {i:getattr(commands, i) for i in dir(commands) if not i.startswith("_")}
@@ -49,3 +64,4 @@ finally:
     commands.midi_out.stop()
     clock.stop()
 print(footer)
+

@@ -8,12 +8,19 @@ import midi_out
 
 
 class Banger:
+    #the note number
     pitch = Pattern()
+    #the volume
     velocity = Pattern()
+    #the length of the beat
     duration = Pattern()
+    #the length of the node
     gate = Pattern()
+    #pulse is pattern of on/off
     pulse = Pattern()
+    #chance of note being played or skipped.
     probability = Pattern()
+    #change pitch by an offset
     transpose = Pattern()
 
     def restart(self):
@@ -53,10 +60,14 @@ class Banger:
         if self.enabled:
             while max_pitchs > 0 and time < beats:
                 max_pitchs -= 1
-                channel, pitch, velocity, duration, gate, pulse, chance = next(self)
-                if chance and pulse:
-                    midi_out.note(channel, pitch, velocity=velocity, gate=gate, beat=time)
-                time += duration
+                instructions = next(self)
+                if instructions is not None:
+                    channel, pitch, velocity, duration, gate, pulse, chance = instructions
+                    if chance and pulse:
+                        midi_out.note(channel, pitch, velocity=velocity, gate=gate, beat=time)
+                    time += duration
+                else:
+                    time += 1
         return time
 
 
@@ -76,27 +87,32 @@ class Banger:
 
     def __next__(self):
         if self.enabled:
-            if len(self.pitch) == 0: return None
-            if len(self.velocity) == 0: return None
-            if len(self.duration) == 0: return None
-            if len(self.gate) == 0: return None
-            if len(self.pulse) == 0: return None
+            try:
+                
+                if len(self.pitch) == 0: return None
+                if len(self.velocity) == 0: return None
+                if len(self.duration) == 0: return None
+                if len(self.gate) == 0: return None
+                if len(self.pulse) == 0: return None
 
-            n = next(self.pitch)
-            t = next(self.transpose)
-            n += t
-            if self.scale is not None:
-                n = self.scale(n)
-            v = next(self.velocity)
-            v = sequence.make_int(sequence.mul(v, self.volume))
-            d = next(self.duration)
-            p = next(self.pulse)
-            g = next(self.gate)
-            chance = random.random() < next(self.probability)
-            values = self.channel, n, v, d, g, p, chance
-            if self.watch:
-                print("Banger: %s -> %s"%(self.name, values))
-            return values
+                n = next(self.pitch)
+                t = next(self.transpose)
+                n += t
+                if self.scale is not None:
+                    n = self.scale(n)
+                v = next(self.velocity)
+                v = sequence.make_int(sequence.mul(v, self.volume))
+                d = next(self.duration)
+                p = next(self.pulse)
+                g = next(self.gate)
+                chance = random.random() < next(self.probability)
+                values = self.channel, n, v, d, g, p, chance
+                if self.watch:
+                    print("Banger: %s -> %s"%(self.name, values))
+                return values
+            except Exception as e:
+                print(e)
+                return None
 
 
 

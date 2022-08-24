@@ -27,9 +27,15 @@ class MidiOut:
         v = self.ev(velocity)
         g = self.ev(gate, to_int=False)
         b = self.ev(beat, clamp=False, to_int=False)
-        msg = mido.Message("note_on", channel=c, note=n, velocity=v)
-        self.schedule(msg, b)
-        self.schedule(msg.copy(velocity=0), b+g)
+        if isinstance(n, tuple):
+            for sn in n:
+                msg = mido.Message("note_on", channel=c, note=sn, velocity=v)
+                self.schedule(msg, b)
+                self.schedule(msg.copy(velocity=0), b+g)
+        else:
+            msg = mido.Message("note_on", channel=c, note=n, velocity=v)
+            self.schedule(msg, b)
+            self.schedule(msg.copy(velocity=0), b+g)
 
 
     def cc(self, channel, control, value, beat=0):
@@ -132,9 +138,9 @@ class MidiOut:
         if isinstance(v, list):
             return MidiOut.ev(random.choice(v))
         if isinstance(v, tuple):
-            return v
+            return tuple(MidiOut.ev(i) for i in v)
         if callable(v):
-            return v
+            return MidiOut.ev(v())
         return None
 
 

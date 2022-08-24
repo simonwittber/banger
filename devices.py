@@ -106,7 +106,7 @@ class NovationDrum:
         return self
 
     def trigger(self, velocity=100):
-        midi_out.note(self.channel, self.note_on_number, velocity=velocity, duration=1)
+        midi_out.note(self.channel, self.note_on_number, velocity=velocity)
         return self
 
     def patch(self, index):
